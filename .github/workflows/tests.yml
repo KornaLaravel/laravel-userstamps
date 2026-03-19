@@ -1,17 +1,33 @@
-name: Tests
+name: CI
 
 on:
   push:
 
 jobs:
+  pint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.4
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Check code style
+        run: vendor/bin/pint --test
+
   test:
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest]
-        php: [8.2, 8.3, 8.4]
-        laravel: [9.*, 10.*, 11.*]
+        php: [8.2, 8.3, 8.4, 8.5]
+        laravel: [9.*, 10.*, 11.*, 12.*, 13.*]
         include:
           - laravel: 9.*
             phpunit: 9.*
@@ -22,12 +38,24 @@ jobs:
           - laravel: 11.*
             phpunit: 10.*
             testbench: 9.*
+          - laravel: 12.*
+            phpunit: 11.*
+            testbench: 10.*
+          - laravel: 13.*
+            phpunit: 11.*
+            testbench: 11.*
         exclude:
+          - php: 8.2
+            laravel: 13.*
           - php: 8.3
             laravel: 9.*
           - php: 8.4
             laravel: 9.*
           - php: 8.4
+            laravel: 10.*
+          - php: 8.5
+            laravel: 9.*
+          - php: 8.5
             laravel: 10.*
 
     name: P${{ matrix.php }} - L${{ matrix.laravel }}
@@ -43,8 +71,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          composer require "illuminate/contracts:${{ matrix.laravel }}" "phpunit/phpunit:${{ matrix.phpunit }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
-          composer install --prefer-dist --no-interaction
+          composer require "illuminate/contracts:${{ matrix.laravel }}" "phpunit/phpunit:${{ matrix.phpunit }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update --no-progress
+          composer install --prefer-dist --no-interaction --no-progress
 
       - name: Execute tests
         run: vendor/bin/phpunit
